@@ -1,0 +1,226 @@
+// server.js
+import Stripe from "stripe";
+import Sale from "../models/Sale";
+import SaleProduct from "../models/SaleProduct";
+import Stock from "../models/Stock";
+import PaymentSale from "../models/PaymentSale";
+import Email from "../models/Email";
+import User from "../models/User";
+import Phone from "../models/Phone";
+import nodemailer from "nodemailer";
+import sequelize from "../config/database";
+import { QueryTypes } from "sequelize";
+import State from "../models/State";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-07-30.basil",
+});
+
+export const payment = async (req: any, res: any) => {
+  const { amount, items, name, email, phone } = req.body.datos;
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: "mxn",
+      metadata: {
+        name: name,
+        email: email,
+        phone: phone,
+        items: JSON.stringify(items),
+      },
+    });
+
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error creando PaymentIntent" });
+  }
+};
+
+export const savesale = async (req: any, res: any) => {
+  try {
+    const { paymentIntentId, items, name, email, phone, subtotal, total, iva } =
+      req.body.datos;
+
+    let user = null;
+    let phoneRecord = null;
+    let emailRecord = await Email.findOne({ where: { Description: email } });
+
+    if (emailRecord) {
+      user = await User.findOne({ where: { ID_Email: emailRecord?.ID_Email } });
+      phoneRecord = await Phone.findOne({ where: { Description: phone } });
+    } else {
+      emailRecord = await Email.create({
+        Description: email,
+        State: true,
+      });
+
+      phoneRecord = await Phone.create({
+        Description: phone,
+        State: true,
+      });
+
+      user = await User.create({
+        Name: name || "Cliente Stripe",
+        ID_Rol: 2,
+        ID_Email: emailRecord.ID_Email,
+        ID_Phone: phoneRecord.ID_Phone,
+        Imagen: "",
+        Password: "",
+        State: true,
+      });
+    }
+
+    const sale = await Sale.create({
+      ID_User: user ? user.ID_User : 1,
+      Subtotal: subtotal,
+      Total: total,
+      Iva: iva,
+      Balance_Total: 0,
+      ID_State: 2,
+      ID_Operador: 1,
+      Batch: "web",
+    });
+
+    for (const item of items) {
+      await SaleProduct.create({
+        ID_Sale: sale.ID_Sale,
+        ID_Product: item.ID_Product,
+        ID_Stock: item.ID_Stock,
+        Quantity: item.Quantity,
+        Saleprice: item.Saleprice,
+        Iva: item.Iva,
+        State: true,
+      });
+
+      const stock = await Stock.findOne({ where: { ID_Stock: item.ID_Stock } });
+      if (stock) {
+        stock.Amount -= item.Quantity;
+        await stock.save();
+      }
+    }
+
+    await PaymentSale.create({
+      ID_Sale: sale.ID_Sale,
+      ID_Payment: 2,
+      Description: "Pago web",
+      Monto: total,
+      ReferenceNumber: paymentIntentId,
+      State: true,
+    });
+
+    sendSaleEmail(sale.ID_Sale);
+
+    res.json({ message: "Venta guardada correctamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error guardando la venta" });
+  }
+};
+
+
+export const sendSaleEmail = async (saleId: number) => {
+  console.log("📧 Enviando email de venta para ID:", saleId);
+
+  try {
+    const sale = await Sale.findByPk(saleId, {
+      include: [{ model: PaymentSale }, { model: State }],
+    });
+
+    if (!sale) return;
+
+    const UserTo = await User.findOne({where: { ID_User: sale.ID_User }});
+    const DataTo = await Email.findByPk( UserTo?.ID_Email );
+    const to = DataTo?.Description;
+
+    type ProductRow = { Quantity: number; Description: string | null; Saleprice: number | null };
+    const products = await sequelize.query<ProductRow>(`
+      SELECT sp."Quantity", p."Description", s."Saleprice"
+      FROM "SaleProduct" sp
+      LEFT JOIN "Product" p ON sp."ID_Product" = p."ID_Product"
+      LEFT JOIN "Stock" s ON sp."ID_Stock" = s."ID_Stock"
+      WHERE sp."ID_Sale" = :saleId
+    `, {
+      type: QueryTypes.SELECT,
+      replacements: { saleId: saleId }
+    });
+
+    const html = `
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: monospace;
+              font-size: 11px;
+              width: 260px;
+              margin: 0 auto;
+              padding: 5px;
+              line-height: 1.2;
+            }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .line { border-top: 1px dashed #000; margin: 4px 0; }
+            .product {
+              display: flex;
+              justify-content: space-between;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="center bold">MEDICARE TJ</div>
+          <div class="center">RFC: MTJ123456789</div>
+          <div class="center">Calle Ficticia #123, Zona Centro</div>
+          <div class="center">Tijuana, BC</div>
+          <div class="center">Tel: (664) 123-4567</div>
+          <div class="line"></div>
+          <div><strong>Numero Venta:</strong> ${sale.ID_Sale}</div>
+          <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
+          <div class="line"></div>
+          ${products.map(p => `
+            <div class="product">
+              <span>${p.Description ?? 'Producto'}</span>
+              <span>${p.Quantity} x $${p.Saleprice}</span>
+            </div>
+          `).join("")}
+          <div class="line"></div>
+          <div class="product bold">
+            <span>Subtotal</span>
+            <span>$ ${sale.Subtotal}</span>
+          </div>
+          <div class="product">
+            <span>IVA</span>
+            <span>$ ${sale.Iva}</span>
+          </div>
+          <div class="product bold">
+            <span>Total</span>
+            <span>$ ${sale.Total}</span>
+          </div>
+          <div class="line"></div>
+          <div class="center">¡Gracias por su compra!</div>
+        </body>
+      </html>
+    `;
+
+    // Configura el transporte
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // o tu proveedor SMTP
+      auth: {
+        user: 'psauljavier6@gmail.com',
+        pass: 'svql lgaj xtqi xrtd',
+      },
+    });
+
+    const mailOptions = {
+      from: 'tuemail@gmail.com',
+      to: to,
+      subject: `Ticket de venta #${sale.ID_Sale}`,
+      html,
+    };
+
+    await transporter.sendMail(mailOptions);
+    
+  } catch (error) {
+    console.error("Error al enviar ticket:", error);
+  }
+}
