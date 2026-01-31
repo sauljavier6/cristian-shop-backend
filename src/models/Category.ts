@@ -18,6 +18,13 @@ export default class Category extends Model {
   declare Description: string;
 
   @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    defaultValue: 'Hombre',
+  })
+  declare Genero: string;
+
+  @Column({
     type: DataType.BOOLEAN,
     allowNull: true,
     defaultValue: true,
