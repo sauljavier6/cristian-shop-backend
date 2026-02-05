@@ -7,10 +7,14 @@ import morgan from 'morgan';
 import path from "path"; 
 
 dotenv.config();
+const FRONTEND = process.env.FRONTEND_ORIGINS;
 
 const app = express();
 app.use(morgan('dev'));
-app.use(cors());
+app.use(cors({
+  origin: FRONTEND,
+  credentials: true
+}));
 
 app.use(express.json());
 

@@ -4,6 +4,7 @@ import State from "./State";
 import PaymentSale from "./PaymentSale";
 import SaleProduct from "./SaleProduct";
 import FacturacionTicket from "./FacturacionTicket";
+import Address from "./Adress";
 
 @Table({ tableName: "Sale" })
 export default class Sale extends Model {
@@ -54,6 +55,17 @@ export default class Sale extends Model {
 
   @BelongsTo(() => State)
   State?: State;
+
+  //relacion tabla direccion de la venta
+  @ForeignKey(() => Address)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  declare ID_Address: number;
+
+  @BelongsTo(() => Address)
+  Address?: Address;
 
   @Column({
     type: DataType.INTEGER,

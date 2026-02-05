@@ -11,6 +11,7 @@ import nodemailer from "nodemailer";
 import sequelize from "../config/database";
 import { QueryTypes } from "sequelize";
 import State from "../models/State";
+import Address from "../models/Adress";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-07-30.basil",
@@ -39,8 +40,17 @@ export const payment = async (req: any, res: any) => {
 
 export const savesale = async (req: any, res: any) => {
   try {
-    const { paymentIntentId, items, name, email, phone, subtotal, total, iva } =
-      req.body.datos;
+    const {
+      items,
+      name,
+      email,
+      phone,
+      subtotal,
+      total,
+      iva,
+      address,
+      paymentMethod,
+    } = req.body.datos;
 
     let user = null;
     let phoneRecord = null;
@@ -71,13 +81,19 @@ export const savesale = async (req: any, res: any) => {
       });
     }
 
+    const direccion = await Address.create({
+      Description: address,
+      State: true,
+    });
+
     const sale = await Sale.create({
       ID_User: user ? user.ID_User : 1,
       Subtotal: subtotal,
       Total: total,
       Iva: iva,
-      Balance_Total: 0,
+      Balance_Total: total,
       ID_State: 2,
+      ID_Address: direccion?.ID_Address,
       ID_Operador: 1,
       Batch: "web",
     });
@@ -102,10 +118,10 @@ export const savesale = async (req: any, res: any) => {
 
     await PaymentSale.create({
       ID_Sale: sale.ID_Sale,
-      ID_Payment: 2,
+      ID_Payment: paymentMethod,
       Description: "Pago web",
-      Monto: total,
-      ReferenceNumber: paymentIntentId,
+      Monto: 0,
+      ReferenceNumber: "",
       State: true,
     });
 
@@ -118,9 +134,8 @@ export const savesale = async (req: any, res: any) => {
   }
 };
 
-
 export const sendSaleEmail = async (saleId: number) => {
-  console.log("📧 Enviando email de venta para ID:", saleId);
+  console.log("Enviando email de venta para ID:", saleId);
 
   try {
     const sale = await Sale.findByPk(saleId, {
@@ -129,21 +144,28 @@ export const sendSaleEmail = async (saleId: number) => {
 
     if (!sale) return;
 
-    const UserTo = await User.findOne({where: { ID_User: sale.ID_User }});
-    const DataTo = await Email.findByPk( UserTo?.ID_Email );
+    const UserTo = await User.findOne({ where: { ID_User: sale.ID_User } });
+    const DataTo = await Email.findByPk(UserTo?.ID_Email);
     const to = DataTo?.Description;
 
-    type ProductRow = { Quantity: number; Description: string | null; Saleprice: number | null };
-    const products = await sequelize.query<ProductRow>(`
+    type ProductRow = {
+      Quantity: number;
+      Description: string | null;
+      Saleprice: number | null;
+    };
+    const products = await sequelize.query<ProductRow>(
+      `
       SELECT sp."Quantity", p."Description", s."Saleprice"
       FROM "SaleProduct" sp
       LEFT JOIN "Product" p ON sp."ID_Product" = p."ID_Product"
       LEFT JOIN "Stock" s ON sp."ID_Stock" = s."ID_Stock"
       WHERE sp."ID_Sale" = :saleId
-    `, {
-      type: QueryTypes.SELECT,
-      replacements: { saleId: saleId }
-    });
+    `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { saleId: saleId },
+      },
+    );
 
     const html = `
       <html>
@@ -177,12 +199,16 @@ export const sendSaleEmail = async (saleId: number) => {
           <div><strong>Numero Venta:</strong> ${sale.ID_Sale}</div>
           <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
           <div class="line"></div>
-          ${products.map(p => `
+          ${products
+            .map(
+              (p) => `
             <div class="product">
-              <span>${p.Description ?? 'Producto'}</span>
+              <span>${p.Description ?? "Producto"}</span>
               <span>${p.Quantity} x $${p.Saleprice}</span>
             </div>
-          `).join("")}
+          `,
+            )
+            .join("")}
           <div class="line"></div>
           <div class="product bold">
             <span>Subtotal</span>
@@ -204,23 +230,22 @@ export const sendSaleEmail = async (saleId: number) => {
 
     // Configura el transporte
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // o tu proveedor SMTP
+      service: "gmail", // o tu proveedor SMTP
       auth: {
-        user: 'psauljavier6@gmail.com',
-        pass: 'svql lgaj xtqi xrtd',
+        user: "psauljavier6@gmail.com",
+        pass: "svql lgaj xtqi xrtd",
       },
     });
 
     const mailOptions = {
-      from: 'tuemail@gmail.com',
+      from: "tuemail@gmail.com",
       to: to,
       subject: `Ticket de venta #${sale.ID_Sale}`,
       html,
     };
 
     await transporter.sendMail(mailOptions);
-    
   } catch (error) {
     console.error("Error al enviar ticket:", error);
   }
-}
+};
