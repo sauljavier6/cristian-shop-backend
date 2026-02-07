@@ -2,12 +2,13 @@ import { Request, Response } from 'express';
 import Category from '../models/Category';
 
 export const postCategory = async (req: Request, res: Response) => {
-  const { Description, State } = req.body;
+  const { Description, Genero } = req.body;
 
   try {
     const newCategory = await Category.create({
       Description,
-      State: State ?? true,
+      Genero,
+      State: true,
     });
 
     res.status(201).json({
