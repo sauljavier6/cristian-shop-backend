@@ -134,8 +134,7 @@ export const savesale = async (req: any, res: any) => {
   }
 };
 
-export const sendSaleEmail = async (saleId: number) => {
-  console.log("Enviando email de venta para ID:", saleId);
+export const sendSaleEmail = async (saleId: number) => { 
 
   try {
     const sale = await Sale.findByPk(saleId, {
@@ -190,11 +189,15 @@ export const sendSaleEmail = async (saleId: number) => {
           </style>
         </head>
         <body>
-          <div class="center bold">MEDICARE TJ</div>
-          <div class="center">RFC: MTJ123456789</div>
-          <div class="center">Calle Ficticia #123, Zona Centro</div>
+          <div class="center bold">valentto mx</div>
+          <div class="center">--------------------</div>
+          <div class="center">¡GRACIAS POR SU COMPRA!</div>
+          <div class="center">Vuelva pronto</div>
+          <div class="center">--------------------</div>
+          <div class="center">ValenttoMX@gmail.com</div>
           <div class="center">Tijuana, BC</div>
-          <div class="center">Tel: (664) 123-4567</div>
+          <div class="center">Tel: (663) 403-2690</div>
+          <div class="center">--------------------</div>
           <div class="line"></div>
           <div><strong>Numero Venta:</strong> ${sale.ID_Sale}</div>
           <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>

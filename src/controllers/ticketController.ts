@@ -49,7 +49,7 @@ export const printTicket = async (req: any, res: any) => {
               line-height: 1.2;
             }
             .center { text-align: center; }
-            .bold { font-weight: bold; }
+            .bold { font-weight: bold; } 
             .line { border-top: 1px dashed #000; margin: 4px 0; }
             .product {
               display: flex;
@@ -59,11 +59,15 @@ export const printTicket = async (req: any, res: any) => {
           </style>
         </head>
         <body>
-          <div class="center bold">MEDICARE TJ</div>
-          <div class="center">RFC: MTJ123456789</div>
-          <div class="center">Calle Ficticia #123, Zona Centro</div>
+          <div class="center bold">valentto mx</div>
+          <div class="center">--------------------</div>
+          <div class="center">¡GRACIAS POR SU COMPRA!</div>
+          <div class="center">Vuelva pronto</div>
+          <div class="center">--------------------</div>
+          <div class="center">ValenttoMX@gmail.com</div>
           <div class="center">Tijuana, BC</div>
-          <div class="center">Tel: (664) 123-4567</div>
+          <div class="center">Tel: (663) 403-2690</div>
+          <div class="center">--------------------</div>
           <div class="line"></div>
           <div><strong>Venta #:</strong> ${sale.ID_Sale}</div>
           <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
@@ -157,11 +161,15 @@ export const sendTicketByEmail = async (req: any, res: any) => {
           </style>
         </head>
         <body>
-          <div class="center bold">MEDICARE TJ</div>
-          <div class="center">RFC: MTJ123456789</div>
-          <div class="center">Calle Ficticia #123, Zona Centro</div>
+          <div class="center bold">valentto mx</div>
+          <div class="center">--------------------</div>
+          <div class="center">¡GRACIAS POR SU COMPRA!</div>
+          <div class="center">Vuelva pronto</div>
+          <div class="center">--------------------</div>
+          <div class="center">ValenttoMX@gmail.com</div>
           <div class="center">Tijuana, BC</div>
-          <div class="center">Tel: (664) 123-4567</div>
+          <div class="center">Tel: (663) 403-2690</div>
+          <div class="center">--------------------</div>
           <div class="line"></div>
           <div><strong>Numero Venta:</strong> ${sale.ID_Sale}</div>
           <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
@@ -268,11 +276,15 @@ export const sendCotizacionByEmail = async (req: any, res: any) => {
           </style>
         </head>
         <body>
-          <div class="center bold">MEDICARE TJ</div>
-          <div class="center">RFC: MTJ123456789</div>
-          <div class="center">Calle Ficticia #123, Zona Centro</div>
+          <div class="center bold">valentto mx</div>
+          <div class="center">--------------------</div>
+          <div class="center">¡GRACIAS POR SU INTERÉS!</div>
+          <div class="center">Esperamos poder atenderle pronto</div>
+          <div class="center">--------------------</div>
+          <div class="center">ValenttoMX@gmail.com</div>
           <div class="center">Tijuana, BC</div>
-          <div class="center">Tel: (664) 123-4567</div>
+          <div class="center">Tel: (663) 403-2690</div>
+          <div class="center">--------------------</div>
           <div class="line"></div>
           <div><strong>Numero Cotizacion:</strong> ${sale.ID_Sale}</div>
           <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
@@ -379,11 +391,15 @@ export const printTicketCotizacion = async (req: any, res: any) => {
           </style>
         </head>
         <body>
-          <div class="center bold">MEDICARE TJ</div>
-          <div class="center">RFC: MTJ123456789</div>
-          <div class="center">Calle Ficticia #123, Zona Centro</div>
+          <div class="center bold">valentto mx</div>
+          <div class="center">--------------------</div>
+          <div class="center">¡GRACIAS POR SU INTERÉS!</div>
+          <div class="center">Esperamos poder atenderle pronto</div>
+          <div class="center">--------------------</div>
+          <div class="center">ValenttoMX@gmail.com</div>
           <div class="center">Tijuana, BC</div>
-          <div class="center">Tel: (664) 123-4567</div>
+          <div class="center">Tel: (663) 403-2690</div>
+          <div class="center">--------------------</div>
           <div class="line"></div>
           <div><strong>Cotizacion #:</strong> ${sale.ID_Sale}</div>
           <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
