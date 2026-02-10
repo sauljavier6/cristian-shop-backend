@@ -291,6 +291,10 @@ export const printRemision = async (req: any, res: any) => {
     doc
       .fontSize(14)
       .fillColor(primaryColor)
+      .text(`Envio: $250`, { align: "right" });
+    doc
+      .fontSize(14)
+      .fillColor(primaryColor)
       .text(`TOTAL: $${sale.Total}`, { align: "right" });
 
     doc.moveDown(2);
