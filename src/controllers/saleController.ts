@@ -14,6 +14,7 @@ import SaleProduct from "../models/SaleProduct";
 import State from "../models/State";
 import Payment from "../models/Payment";
 import Iva from "../models/Iva";
+import Address from "../models/Adress";
 
 export const getListSale = async (req: any, res: any) => {
   try {
@@ -73,7 +74,7 @@ export const getListSale = async (req: any, res: any) => {
           user,
           operator,
         };
-      })
+      }),
     );
 
     const totalPages = searchTerm ? 1 : Math.ceil(count / limit);
@@ -83,7 +84,7 @@ export const getListSale = async (req: any, res: any) => {
       message: "Lista de ventas obtenida correctamente",
       totalItems: count,
       totalPages,
-      currentPage: searchTerm ? 1 : page, 
+      currentPage: searchTerm ? 1 : page,
       hasMore: !searchTerm && page < totalPages,
     });
   } catch (error) {
@@ -91,7 +92,6 @@ export const getListSale = async (req: any, res: any) => {
     res.status(500).json({ message: "Error del servidor" });
   }
 };
-
 
 export const createSale = async (req: any, res: any) => {
   const t = await Sale.sequelize?.transaction();
@@ -106,23 +106,29 @@ export const createSale = async (req: any, res: any) => {
       Payment,
       ID_Operador,
       Lote,
-      State, 
-      items
+      State,
+      items,
     } = req.body;
 
-    const totalPayments = Payment.reduce((sum: number, p: any) => sum + p.Monto, 0);
+    const totalPayments = Payment.reduce(
+      (sum: number, p: any) => sum + p.Monto,
+      0,
+    );
 
-    const newSale = await Sale.create({
-      ID_User,
-      Total,
-      Balance_Total: Balance_Total - totalPayments,
-      Subtotal,
-      Iva,
-      ID_State,
-      ID_Operador,
-      Batch: Lote,
-      State: State ?? true,
-    }, { transaction: t }); 
+    const newSale = await Sale.create(
+      {
+        ID_User,
+        Total,
+        Balance_Total: Balance_Total - totalPayments,
+        Subtotal,
+        Iva,
+        ID_State,
+        ID_Operador,
+        Batch: Lote,
+        State: State ?? true,
+      },
+      { transaction: t },
+    );
 
     if (Array.isArray(Payment) && Payment.length > 0) {
       const paymentSales = Payment.map((p) => ({
@@ -131,7 +137,7 @@ export const createSale = async (req: any, res: any) => {
         Description: p.Description,
         Monto: p.Monto,
         ReferenceNumber: p.ReferenceNumber,
-        State: true
+        State: true,
       }));
 
       await PaymentSale.bulkCreate(paymentSales, { transaction: t });
@@ -156,7 +162,9 @@ export const createSale = async (req: any, res: any) => {
         }
 
         if (stock.Amount < item.quantity) {
-          throw new Error(`Stock insuficiente para el producto ${item.productId}`);
+          throw new Error(
+            `Stock insuficiente para el producto ${item.productId}`,
+          );
         }
 
         stock.Amount -= item.quantity;
@@ -167,20 +175,18 @@ export const createSale = async (req: any, res: any) => {
     await t?.commit();
 
     res.status(201).json({
-      message: 'Venta completada con pagos, productos y stock actualizado',
-      data: newSale
+      message: "Venta completada con pagos, productos y stock actualizado",
+      data: newSale,
     });
-
   } catch (error) {
     await t?.rollback();
-    console.error('Error al crear la venta:', error);
+    console.error("Error al crear la venta:", error);
     res.status(500).json({
-      message: 'Error al crear la venta',
-      error
+      message: "Error al crear la venta",
+      error,
     });
   }
 };
-
 
 export const searchProducts = async (req: any, res: any) => {
   const { q } = req.query;
@@ -188,10 +194,7 @@ export const searchProducts = async (req: any, res: any) => {
   try {
     const products = await Product.findAll({
       where: {
-        [Op.or]: [
-          { Description: { [Op.iLike]: `${q}%` } },
-          { Code: q },
-        ],
+        [Op.or]: [{ Description: { [Op.iLike]: `${q}%` } }, { Code: q }],
       },
       include: [
         {
@@ -211,8 +214,8 @@ export const searchProducts = async (req: any, res: any) => {
 
     res.json(products);
   } catch (error) {
-    console.error('Error al buscar productos:', error);
-    res.status(500).json({ message: 'Error del servidor' });
+    console.error("Error al buscar productos:", error);
+    res.status(500).json({ message: "Error del servidor" });
   }
 };
 
@@ -225,7 +228,7 @@ export const createCustomerSale = async (req: any, res: any) => {
       RazonSocial,
       CodigoPostal,
       Rfc,
-      RegimenFiscal
+      RegimenFiscal,
     } = req.body;
 
     const emailCreated = await Email.create({
@@ -243,13 +246,13 @@ export const createCustomerSale = async (req: any, res: any) => {
       ID_Rol: 2,
       ID_Email: emailCreated.ID_Email,
       ID_Phone: phoneCreated.ID_Phone,
-      Imagen: '',
-      Password: '',
+      Imagen: "",
+      Password: "",
       State: true,
     });
 
     const newFacturacion = await Facturacion.create({
-      ID_User: newUser.ID_User,  
+      ID_User: newUser.ID_User,
       RazonSocial,
       CodigoPostal,
       Rfc,
@@ -258,13 +261,14 @@ export const createCustomerSale = async (req: any, res: any) => {
     });
 
     res.status(201).json({
-      message: 'Registro completado',
-      data: newUser, newFacturacion,
+      message: "Registro completado",
+      data: newUser,
+      newFacturacion,
     });
   } catch (error) {
-    console.error('Error al crear cliente:', error);
+    console.error("Error al crear cliente:", error);
     res.status(500).json({
-      message: 'Error al crear cliente',
+      message: "Error al crear cliente",
       error,
     });
   }
@@ -281,28 +285,25 @@ export const UpdateCustomerSale = async (req: any, res: any) => {
       CodigoPostal,
       Rfc,
       RegimenFiscal,
-      ID_Sale
+      ID_Sale,
     } = req.body;
 
     const user = await User.findByPk(ID_User);
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
     await Email.update(
       { Description: emailValue },
-      { where: { ID_Email: user.ID_Email } }
+      { where: { ID_Email: user.ID_Email } },
     );
 
     await Phone.update(
       { Description: phoneValue },
-      { where: { ID_Phone: user.ID_Phone } }
+      { where: { ID_Phone: user.ID_Phone } },
     );
 
-    await User.update(
-      { Name },
-      { where: { ID_User } }
-    );
+    await User.update({ Name }, { where: { ID_User } });
 
     const facturacion = await Facturacion.findOne({ where: { ID_User } });
     if (facturacion) {
@@ -313,7 +314,7 @@ export const UpdateCustomerSale = async (req: any, res: any) => {
           Rfc,
           RegimenFiscal,
         },
-        { where: { ID_User } }
+        { where: { ID_User } },
       );
     }
 
@@ -323,10 +324,10 @@ export const UpdateCustomerSale = async (req: any, res: any) => {
       await sale.save();
     }
 
-    res.status(200).json({ message: 'Cliente actualizado correctamente' });
+    res.status(200).json({ message: "Cliente actualizado correctamente" });
   } catch (error) {
-    console.error('Error al actualizar cliente:', error);
-    res.status(500).json({ message: 'Error al actualizar cliente', error });
+    console.error("Error al actualizar cliente:", error);
+    res.status(500).json({ message: "Error al actualizar cliente", error });
   }
 };
 
@@ -352,8 +353,8 @@ export const postCustomerSale = async (req: any, res: any) => {
       ID_Rol: 2,
       ID_Phone: phone.ID_Phone,
       ID_Email: email.ID_Email,
-      Imagen: '',
-      Password: '',
+      Imagen: "",
+      Password: "",
       State: true,
     });
 
@@ -367,28 +368,30 @@ export const postCustomerSale = async (req: any, res: any) => {
 
     const sale = await Sale.findByPk(ID_Sale);
     if (!sale) {
-      return res.status(404).json({ message: 'Venta no encontrada' });
+      return res.status(404).json({ message: "Venta no encontrada" });
     }
 
     sale.ID_User = user.ID_User;
     await sale.save();
 
     res.status(201).json({
-      message: 'Cliente creado y asignado a la venta correctamente',
+      message: "Cliente creado y asignado a la venta correctamente",
       ID_User: user.ID_User,
     });
   } catch (error) {
-    console.error('Error al crear cliente:', error);
-    res.status(500).json({ message: 'Error al crear cliente', error });
+    console.error("Error al crear cliente:", error);
+    res.status(500).json({ message: "Error al crear cliente", error });
   }
 };
 
-export const getSaleById = async (req:any, res:any) => {
+export const getSaleById = async (req: any, res: any) => {
   try {
     const { ID_Sale } = req.params;
 
     if (!ID_Sale) {
-      return res.status(400).json({ success: false, message: "ID_Sale es requerido" });
+      return res
+        .status(400)
+        .json({ success: false, message: "ID_Sale es requerido" });
     }
 
     const sale = await Sale.findOne({
@@ -405,11 +408,16 @@ export const getSaleById = async (req:any, res:any) => {
         {
           model: State,
         },
+        {
+          model: Address,
+        },
       ],
     });
 
     if (!sale) {
-      return res.status(404).json({ success: false, message: "Venta no encontrada" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Venta no encontrada" });
     }
 
     // Si la venta tiene un cliente (ID_User), buscar cliente y facturación
@@ -457,10 +465,7 @@ export const getSaleById = async (req:any, res:any) => {
 export const createPaymentSale = async (req: any, res: any) => {
   const t = await Sale.sequelize?.transaction();
   try {
-    const {
-      Payment,
-      ID_Sale,
-    } = req.body;
+    const { Payment, ID_Sale } = req.body;
 
     if (Array.isArray(Payment) && Payment.length > 0) {
       const paymentSales = Payment.map((p) => ({
@@ -474,11 +479,14 @@ export const createPaymentSale = async (req: any, res: any) => {
 
       await PaymentSale.bulkCreate(paymentSales, { transaction: t });
 
-      const totalPayments = Payment.reduce((sum, p) => sum + Number(p.Monto), 0);
+      const totalPayments = Payment.reduce(
+        (sum, p) => sum + Number(p.Monto),
+        0,
+      );
 
       const sale = await Sale.findByPk(ID_Sale, { transaction: t });
       if (!sale) {
-        throw new Error('Venta no encontrada');
+        throw new Error("Venta no encontrada");
       }
 
       sale.Balance_Total = Number(sale.Balance_Total) - totalPayments;
@@ -489,12 +497,12 @@ export const createPaymentSale = async (req: any, res: any) => {
 
     await t?.commit();
 
-    res.status(201).json({ message: 'Pago registrado y balance actualizado' });
+    res.status(201).json({ message: "Pago registrado y balance actualizado" });
   } catch (error) {
     await t?.rollback();
-    console.error('Error al crear el pago:', error);
+    console.error("Error al crear el pago:", error);
     res.status(500).json({
-      message: 'Error al crear el pago',
+      message: "Error al crear el pago",
       error,
     });
   }

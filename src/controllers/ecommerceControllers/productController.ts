@@ -99,7 +99,6 @@ export const getProductsCatalogo = async (req: any, res: any) => {
   }
 };
 
-
 export const getProducts = async (req: any, res: any) => {
   console.log('Obteniendo lista de productos con paginación');
   try {
@@ -167,7 +166,6 @@ export const getProductById = async (req: any, res: any) => {
     res.status(500).json({ message: 'Error del servidor' });
   }
 };
-
 
 export const searchProducts = async (req: any, res: any) => {
   const { description } = req.params;

@@ -1,4 +1,5 @@
 // @/controllers/SaleController.ts
+import Address from "../models/Adress";
 import Email from "../models/Email";
 import Payment from "../models/Payment";
 import PaymentSale from "../models/PaymentSale";
@@ -125,6 +126,7 @@ export const printRemision = async (req: any, res: any) => {
     const saleJson = JSON.parse(JSON.stringify(sale));
 
     let cliente = null;
+    let address = null;
     if (sale.ID_User) {
       cliente = await User.findOne({
         where: { ID_User: sale.ID_User },
@@ -133,6 +135,11 @@ export const printRemision = async (req: any, res: any) => {
           { model: Email, attributes: ["Description"] },
           { model: Phone, attributes: ["Description"] },
         ],
+      });
+
+      address = await Address.findOne({
+        where: { ID_Address: sale.ID_Address },
+        attributes: ["ID_Address", "Description"],
       });
     }
 
@@ -164,11 +171,11 @@ export const printRemision = async (req: any, res: any) => {
     doc
       .fontSize(10)
       .fillColor(darkGray)
-      .text("RFC: ABC123456789", { align: "center" })
-      .text("Tel: (664) 123-4567 | contacto@saludtotal.com", {
+      .text("Remision", { align: "center" })
+      .text("Tel: (663) 403-2690 | ValenttoMX@gmail.com", {
         align: "center",
       })
-      .text("Dirección: Blvd. Salud 123, Tijuana, BC", { align: "center" });
+      .text("Tijuana, B.C.", { align: "center" });
 
     doc.moveDown(1.2);
 
@@ -196,6 +203,7 @@ export const printRemision = async (req: any, res: any) => {
     doc.text(`Número de venta: ${sale.ID_Sale}`);
     doc.text(`Fecha: ${formatDateTime(sale.createdAt)}`);
     doc.text(`Cliente: ${cliente?.Name || "Público General"}`);
+    doc.text(`Dirección: ${address?.Description || "No registrada"}`);
 
     doc.moveDown();
 

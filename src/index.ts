@@ -24,7 +24,7 @@ app.use('/api', indexRoutes);
 
 const PORT = process.env.PORT || 4000;
 
-sequelize.sync({ alter: true }).then(() => {
+sequelize.sync().then(() => {
   console.log("✅ Base de datos conectada");
   app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

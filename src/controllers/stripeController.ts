@@ -134,14 +134,19 @@ export const savesale = async (req: any, res: any) => {
   }
 };
 
-export const sendSaleEmail = async (saleId: number) => { 
-
+export const sendSaleEmail = async (saleId: number) => {
   try {
     const sale = await Sale.findByPk(saleId, {
       include: [{ model: PaymentSale }, { model: State }],
     });
 
     if (!sale) return;
+
+    let address = null;
+    address = await Address.findOne({
+      where: { ID_Address: sale.ID_Address },
+      attributes: ["ID_Address", "Description"],
+    });
 
     const UserTo = await User.findOne({ where: { ID_User: sale.ID_User } });
     const DataTo = await Email.findByPk(UserTo?.ID_Email);
@@ -167,76 +172,101 @@ export const sendSaleEmail = async (saleId: number) => {
     );
 
     const html = `
-      <html>
-        <head>
-          <style>
-            body {
-              font-family: monospace;
-              font-size: 11px;
-              width: 260px;
-              margin: 0 auto;
-              padding: 5px;
-              line-height: 1.2;
-            }
-            .center { text-align: center; }
-            .bold { font-weight: bold; }
-            .line { border-top: 1px dashed #000; margin: 4px 0; }
-            .product {
-              display: flex;
-              justify-content: space-between;
-              font-size: 12px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="center bold">valentto mx</div>
-          <div class="center">--------------------</div>
-          <div class="center">¡GRACIAS POR SU COMPRA!</div>
-          <div class="center">Vuelva pronto</div>
-          <div class="center">--------------------</div>
-          <div class="center">ValenttoMX@gmail.com</div>
-          <div class="center">Tijuana, BC</div>
-          <div class="center">Tel: (663) 403-2690</div>
-          <div class="center">--------------------</div>
-          <div class="line"></div>
-          <div><strong>Numero Venta:</strong> ${sale.ID_Sale}</div>
-          <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
-          <div class="line"></div>
-          ${products
-            .map(
-              (p) => `
-            <div class="product">
-              <span>${p.Description ?? "Producto"}</span>
-              <span>${p.Quantity} x $${p.Saleprice}</span>
-            </div>
-          `,
-            )
-            .join("")}
-          <div class="line"></div>
-          <div class="product bold">
-            <span>Subtotal</span>
-            <span>$ ${sale.Subtotal}</span>
-          </div>
+    <html>
+      <head>
+        <title>Ticket #${sale.ID_Sale}</title>
+        <style>
+          body {
+            font-family: monospace;
+            font-size: 11px;
+            width: 260px;
+            margin: 0 auto;
+            padding: 6px;
+            line-height: 1.2;
+          }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .small { font-size: 10px; }
+          .line { border-top: 1px dashed #000; margin: 6px 0; }
+          .product {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+          }
+          .box {
+            border: 1px dashed #000;
+            padding: 4px;
+            margin: 6px 0;
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="center bold">VALENTTO MX</div>
+        <div class="center">--------------------</div>
+        <div class="center bold">TICKET DE VENTA</div>
+        <div class="center">¡GRACIAS POR SU COMPRA!</div>
+        <div class="center">--------------------</div>
+
+        <div class="center small">ValenttoMX@gmail.com</div>
+        <div class="center small">Tijuana, BC</div>
+        <div class="center small">Tel: (663) 403-2690</div>
+
+        <div class="line"></div>
+
+        <div><strong>Venta #:</strong> ${sale.ID_Sale}</div>
+        <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString()}</div>
+
+        <div class="line"></div>
+
+        <div class="bold">Dirección del cliente:</div>
+        <div class="product">
+          ${address?.Description ?? "No registrada"}
+        </div>
+
+        <div class="line"></div>
+
+        ${products.map(p => `
           <div class="product">
-            <span>IVA</span>
-            <span>$ ${sale.Iva}</span>
+            <span>${p.Description ?? "Producto"}</span>
+            <span>${p.Quantity} x $${p.Saleprice}</span>
           </div>
-          <div class="product bold">
-            <span>Total</span>
-            <span>$ ${sale.Total}</span>
-          </div>
-          <div class="line"></div>
-          <div class="center">¡Gracias por su compra!</div>
-        </body>
-      </html>
+        `).join("")}
+
+        <div class="line"></div>
+
+        <div class="product bold">
+          <span>Subtotal</span>
+          <span>$ ${sale.Subtotal}</span>
+        </div>
+
+        <div class="product">
+          <span>IVA</span>
+          <span>$ ${sale.Iva}</span>
+        </div>
+        
+
+        <div class="product bold">
+          <span>TOTAL</span>
+          <span>$ ${sale.Total}</span>
+        </div>
+
+
+        <div class="line"></div>
+
+        <div class="center small">Conserve este ticket como comprobante</div>
+        <div class="center bold">¡Gracias por su preferencia!</div>
+
+      </body>
+    </html>
     `;
 
     // Configura el transporte
     const transporter = nodemailer.createTransport({
       service: "gmail", // o tu proveedor SMTP
       auth: {
-        user: "psauljavier6@gmail.com",
-        pass: "svql lgaj xtqi xrtd",
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
       },
     });
 
