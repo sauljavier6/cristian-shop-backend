@@ -56,13 +56,14 @@ export default class Sale extends Model {
   @BelongsTo(() => State)
   State?: State;
 
-  //relacion tabla direccion de la venta
+  // relación tabla dirección de la venta
   @ForeignKey(() => Address)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
+    defaultValue: 1, // o un ID específico si quieres
   })
-  declare ID_Address: number;
+  declare ID_Address?: number;
 
   @BelongsTo(() => Address)
   Address?: Address;
