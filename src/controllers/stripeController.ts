@@ -270,7 +270,7 @@ export const sendSaleEmail = async (saleId: number) => {
 
     // Configura el transporte
     await resend.emails.send({
-      from: "Valentto <onboarding@resend.dev>",
+      from: "ValenttoMX <ValenttoMX@valenttomx.com>",
       to: to!,
       subject: `Ticket de venta #${sale.ID_Sale}`,
       html,

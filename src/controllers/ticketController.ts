@@ -8,6 +8,9 @@ import nodemailer from "nodemailer";
 import Email from "../models/Email";
 import User from "../models/User";
 import Address from "../models/Adress";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_KEY!);
 
 export const printTicket = async (req: any, res: any) => {
   const { id } = req.params;
@@ -26,7 +29,7 @@ export const printTicket = async (req: any, res: any) => {
       Description: string | null;
       Saleprice: number | null;
     };
-    
+
     const products = await sequelize.query<ProductRow>(
       `
       SELECT sp."Quantity", p."Description", sp."Saleprice"
@@ -231,12 +234,16 @@ export const sendTicketByEmail = async (req: any, res: any) => {
 
         <div class="line"></div>
 
-        ${products.map(p => `
+        ${products
+          .map(
+            (p) => `
           <div class="product">
             <span>${p.Description ?? "Producto"}</span>
             <span>${p.Quantity} x $${p.Saleprice}</span>
           </div>
-        `).join("")}
+        `,
+          )
+          .join("")}
 
         <div class="line"></div>
 
@@ -265,22 +272,13 @@ export const sendTicketByEmail = async (req: any, res: any) => {
     `;
 
     // Configura el transporte
-    const transporter = nodemailer.createTransport({
-      service: "gmail", // o tu proveedor SMTP
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: "tuemail@gmail.com",
-      to: to,
+    await resend.emails.send({
+      from: "ValenttoMX <ValenttoMX@valenttomx.com>",
+      to: to!,
       subject: `Ticket de venta #${sale.ID_Sale}`,
       html,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
     res.json({ message: "Ticket enviado exitosamente" });
   } catch (error) {
     console.error("Error al enviar ticket:", error);
@@ -383,12 +381,16 @@ export const sendCotizacionByEmail = async (req: any, res: any) => {
 
         <div class="line"></div>
 
-        ${products.map(p => `
+        ${products
+          .map(
+            (p) => `
           <div class="product">
             <span>${(p.Description ?? "Producto").slice(0, 22)}</span>
             <span>${p.Quantity} x $${p.Saleprice}</span>
           </div>
-        `).join("")}
+        `,
+          )
+          .join("")}
 
         <div class="line"></div>
 
@@ -415,22 +417,13 @@ export const sendCotizacionByEmail = async (req: any, res: any) => {
     `;
 
     // Configura el transporte
-    const transporter = nodemailer.createTransport({
-      service: "gmail", // o tu proveedor SMTP
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
+    await resend.emails.send({
+      from: "ValenttoMX <ValenttoMX@valenttomx.com>",
+      to: to!,
+      subject: `Ticket de venta #${sale.ID_Sale}`,
+      html,
     });
 
-    const mailOptions = {
-      from: "tuemail@gmail.com",
-      to: to,
-      subject: `Cotizacion #${sale.ID_Sale}`,
-      html,
-    };
-
-    await transporter.sendMail(mailOptions);
     res.json({ message: "Cotizacion enviada exitosamente" });
   } catch (error) {
     console.error("Error al enviar ticket:", error);
@@ -518,12 +511,16 @@ export const printTicketCotizacion = async (req: any, res: any) => {
 
         <div class="line"></div>
 
-        ${products.map(p => `
+        ${products
+          .map(
+            (p) => `
           <div class="product">
             <span>${p.Description ?? "Producto"}</span>
             <span>${p.Quantity} x $${p.Saleprice}</span>
           </div>
-        `).join("")}
+        `,
+          )
+          .join("")}
 
         <div class="line"></div>
 
