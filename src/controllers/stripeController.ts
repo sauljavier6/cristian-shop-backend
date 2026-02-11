@@ -12,6 +12,9 @@ import sequelize from "../config/database";
 import { QueryTypes } from "sequelize";
 import State from "../models/State";
 import Address from "../models/Adress";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_KEY!);
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-07-30.basil",
@@ -226,12 +229,16 @@ export const sendSaleEmail = async (saleId: number) => {
 
         <div class="line"></div>
 
-        ${products.map(p => `
+        ${products
+          .map(
+            (p) => `
           <div class="product">
             <span>${p.Description ?? "Producto"}</span>
             <span>${p.Quantity} x $${p.Saleprice}</span>
           </div>
-        `).join("")}
+        `,
+          )
+          .join("")}
 
         <div class="line"></div>
 
@@ -262,22 +269,13 @@ export const sendSaleEmail = async (saleId: number) => {
     `;
 
     // Configura el transporte
-    const transporter = nodemailer.createTransport({
-      service: "gmail", // o tu proveedor SMTP
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: "tuemail@gmail.com",
-      to: to,
+    await resend.emails.send({
+      from: "Valentto <onboarding@resend.dev>",
+      to: to!,
       subject: `Ticket de venta #${sale.ID_Sale}`,
       html,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error("Error al enviar ticket:", error);
   }
